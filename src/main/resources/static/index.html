@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>Test Order Client</title>
+    <link href="bootstrap.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 20px;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        #console {
+            height: 400px;
+            overflow: auto;
+        }
+        .username-msg {
+            color: orange;
+        }
+        .connect-msg {
+            color: green;
+        }
+        .disconnect-msg {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Test Order Client</h1>
+<div class="well">
+    <div class="row-fluid">
+        <div class="info-panel span6">
+            <p>
+                This is just an example client (based on https://github.com/jamesjieye/netty-socketio.spring) used for
+                testing the server implementation.
+            </p>
+
+            <p>
+                If you have a working frontend from the HTML5 training after forking this repo you can delete everything
+                in the static folder and replace it with your code.
+            </p>
+
+            <p>
+                If you don't have an existing frontend this can be used as a test harness (although having some
+                integration testing as well is recommended).
+            </p>
+        </div>
+
+        <div id="console" class="span6">
+            <span class="connect-msg">Connecting to server...</span>
+        </div>
+    </div>
+    <div class="row-fluid">
+        <form class="span-12 form-inline" onsubmit="return false;">
+            <select id="orderType">
+                <option value="buy">Buy</option>
+                <option value="sell">Sell</option>
+            </select>
+            <label for="quantity">Quantity:</label>
+            <input type="number" id="quantity" name="quantity">
+            <label for="price">Price:</label>
+            <input type="number" id="price" name="price">
+            <button type="button" onClick="placeOrder()" class="btn" id="send">Place Order</button>
+            <button type="button" onClick="sendDisconnect()" class="btn">Disconnect</button>
+        </form>
+    </div>
+</div>
+
+<script src="js/socket.io/socket.io.js"></script>
+<script src="js/moment.min.js"></script>
+<script src="js/jquery-1.10.1.min.js"></script>
+
+<script>
+    var userName = 'user' + Math.floor((Math.random() * 1000) + 1);
+    var socket = io('http://localhost:9092/order');
+    socket.connect();
+    socket.on('connect', function () {
+        $('#console').html('');
+        output('<span class="connect-msg">Client has connected to the server!</span>');
+    });
+    socket.on('order', function (data) {
+        console.log('Received order', data);
+        output('<span class="username-msg">' + data.userName + '</span> placed a ' + data.orderType + ' order for ' + data.quantity + ' bitcoin at price £' + data.price + ' per bitcoin');
+    });
+    socket.on('buyOrders', function (data) {
+        console.log('Buy Orders', data);
+    });
+    socket.on('sellOrders', function (data) {
+        console.log('Sell Orders', data);
+    });
+    socket.on('trades', function (data) {
+        console.log('Trades', data);
+    });
+    socket.on('disconnect', function () {
+        output('<span class="disconnect-msg">The client has disconnected!</span>');
+    });
+    function sendDisconnect() {
+        socket.disconnect();
+    }
+    function placeOrder() {
+        var $orderType = $('#orderType');
+        var orderType = $orderType.val();
+        var $quantity = $('#quantity');
+        var quantity = $quantity.val();
+        var $price = $('#price');
+        var price = $price.val();
+        var jsonObject = {userName: userName, orderType: orderType, quantity: quantity, price: price};
+        socket.emit('order', jsonObject);
+    }
+    function output(message) {
+        var currentTime = "<span class='time'>" + moment().format('HH:mm:ss.SSS') + "</span>";
+        var element = $("<div>" + currentTime + " " + message + "</div>");
+        $('#console').prepend(element);
+    }
+    $(document).keydown(function (e) {
+        if (e.keyCode == 13) {
+            $('#send').click();
+        }
+    });
+</script>
+</body>
+</html>
